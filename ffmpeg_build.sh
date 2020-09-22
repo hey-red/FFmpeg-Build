@@ -1,5 +1,4 @@
 #!/bin/bash
-# TODO: clang for linux build
 set -e
 
 while [[ "$#" -gt 0 ]]; do case $1 in
@@ -47,9 +46,15 @@ export prefix=$(pwd)/ffmpeg_build
 mkdir -p $prefix
 mkdir -p $prefix/lib/pkgconfig
 
-export CFLAGS="-I$prefix/include"
-export CPPFLAGS="-I$prefix/include" # for libpng
-export LDFLAGS="-L$prefix/lib"
+# Use clang for linux build
+if [[ $target_os == "linux" ]]; then
+  export CC=clang
+fi
+
+export CFLAGS="-I$prefix/include -mtune=generic -O2 -fPIC"
+export CXXFLAGS="${CFLAGS}"
+export CPPFLAGS="-I$prefix/include -fPIC"
+export LDFLAGS="-L$prefix/lib -pipe"
 export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
 
 cd $prefix
@@ -122,7 +127,7 @@ cd ffmpeg
     cross_flags="--target-os=$target_os --cross-prefix=$host-"
   else
     echo "Build FFmpeg for Linux $arch"
-    cross_flags="--libdir=$prefix/bin"
+    cross_flags="--libdir=$prefix/bin --enable-pic"
   fi
 
   flags="$cross_flags $base_flags"
