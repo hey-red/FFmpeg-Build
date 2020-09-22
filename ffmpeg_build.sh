@@ -47,9 +47,9 @@ export prefix=$(pwd)/ffmpeg_build
 mkdir -p $prefix
 mkdir -p $prefix/lib/pkgconfig
 
-export CFLAGS="$CFLAGS -I$prefix/include"
-export CPPFLAGS="$CFLAGS -I$prefix/include" # for libpng
-export LDFLAGS="$LDFLAGS -L$prefix/lib"
+export CFLAGS="-I$prefix/include"
+export CPPFLAGS="-I$prefix/include" # for libpng
+export LDFLAGS="-L$prefix/lib"
 export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
 
 cd $prefix
@@ -59,7 +59,7 @@ rm -rf zlib
 git clone --depth 1 https://github.com/madler/zlib || exit 1
 cd zlib
   if [[ $target_os == "linux" ]]; then
-    ./configure --prefix=$host- --static --libdir=$prefix/lib --includedir=$prefix/include
+    ./configure --prefix=$prefix --static
     make -j$cpu_count && make install
   else
     make -j$cpu_count -f win32/Makefile.gcc BINARY_PATH=$prefix/bin INCLUDE_PATH=$prefix/include LIBRARY_PATH=$prefix/lib SHARED_MODE=0 PREFIX=$host- install
@@ -104,45 +104,30 @@ git clone --depth 1 --branch release/4.3 https://github.com/FFmpeg/FFmpeg.git ff
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
-  # Really?! We have shell without conditional arguments?
+  cross_flags=""
+  base_flags="--disable-debug --enable-shared --disable-static --disable-doc \
+      --disable-all --disable-autodetect --disable-network \
+      --enable-gpl --enable-version3 \
+      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
+      --enable-zlib \
+      --enable-protocol=file \
+      --enable-libdav1d --enable-libwebp \
+      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegvideo \
+      --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts \
+      --enable-encoder=mjpeg,libwebp,png \
+      --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
+
   if [[ $target_os == "mingw32" ]]; then
-
     echo "Build FFmpeg for Windows $arch"
-
-    ./configure \
-      --disable-debug --enable-shared --disable-static --disable-doc  \
-      --disable-all --disable-autodetect --disable-network \
-      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
-      --enable-zlib \
-      --enable-protocol=file \
-      --enable-libdav1d --enable-libwebp \
-      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegvideo \
-      --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts \
-      --enable-encoder=mjpeg,libwebp,png \
-      --arch=$arch \
-      --prefix=$prefix \
-      --target-os=$target_os \
-      --cross-prefix=$host- \
-      --pkg-config=pkg-config
+    cross_flags="--target-os=$target_os --cross-prefix=$host-"
   else
-
     echo "Build FFmpeg for Linux $arch"
-    
-    ./configure \
-      --disable-debug --enable-shared --disable-static --disable-doc  \
-      --disable-all --disable-autodetect --disable-network \
-      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
-      --enable-zlib \
-      --enable-protocol=file \
-      --enable-libdav1d --enable-libwebp \
-      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegvideo \
-      --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts \
-      --enable-encoder=mjpeg,libwebp,png \
-      --arch=$arch \
-      --prefix=$prefix \
-      --libdir=$prefix/bin \
-      --pkg-config-flags="--static"
+    cross_flags="--libdir=$prefix/bin"
   fi
+
+  flags="$cross_flags $base_flags"
+
+  ./configure $flags --pkg-config-flags="--static"
 
   make -j$cpu_count && make install && echo "Done."
 
