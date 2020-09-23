@@ -19,7 +19,8 @@ if [[ -z "$target_os" ]]; then echo "target is not set"; exit 1; fi;
 
 # Install build deps
 # Ubuntu 18.04 ppa meson/ninja https://launchpad.net/~jonathonf/+archive/ubuntu/meson
-sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 git yasm make automake autoconf pkg-config libtool-bin nasm meson rename -y
+# Clang 11 https://apt.llvm.org/
+sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 clang-11 git yasm make automake autoconf pkg-config libtool-bin nasm meson rename -y
 
 # Set cpu count
 cpu_count="$(grep -c processor /proc/cpuinfo 2>/dev/null)"
@@ -48,10 +49,10 @@ mkdir -p $prefix/lib/pkgconfig
 
 # Use clang for linux build
 if [[ $target_os == "linux" ]]; then
-  export CC=clang
+  export CC=clang-11
 fi
 
-export CFLAGS="-I$prefix/include -mtune=generic -O2 -fPIC"
+export CFLAGS="-I$prefix/include -mtune=generic -O3 -fPIC"
 export CXXFLAGS="${CFLAGS}"
 export CPPFLAGS="-I$prefix/include -fPIC"
 export LDFLAGS="-L$prefix/lib -pipe"
@@ -127,7 +128,7 @@ cd ffmpeg
     cross_flags="--target-os=$target_os --cross-prefix=$host-"
   else
     echo "Build FFmpeg for Linux $arch"
-    cross_flags="--libdir=$prefix/bin --enable-pic"
+    cross_flags="--libdir=$prefix/bin --enable-pic --cc=clang-11"
   fi
 
   flags="$cross_flags $base_flags"
