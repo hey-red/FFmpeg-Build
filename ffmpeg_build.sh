@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+noenc=false
+
 while [[ "$#" -gt 0 ]]; do case $1 in
   # linux/mingw32
   -t|--target) 
@@ -10,6 +12,12 @@ while [[ "$#" -gt 0 ]]; do case $1 in
   fi
   target_os="$2"
   shift ;;
+
+  -nenc|--no-encoders)
+  noenc=true
+  echo "Build with no-encoders";
+  ;;
+
   *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
   shift
@@ -60,6 +68,9 @@ export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
 
 cd $prefix
 
+# If encoders enabled
+if [[ $noenc == false ]]; then
+
 # zlib
 rm -rf zlib
 git clone --depth 1 https://github.com/madler/zlib || exit 1
@@ -80,6 +91,19 @@ cd libpng
   make -j$cpu_count && make install
 cd ..
 
+# libwebp 
+rm -rf libwebp
+git clone --depth 1 https://chromium.googlesource.com/webm/libwebp || exit 1
+cd libwebp
+  ./autogen.sh
+  ./configure --host=$host --prefix=$prefix --disable-shared --enable-static \
+    --disable-jpeg --disable-tiff --disable-gif --disable-wic --disable-libwebpdemux \
+    --enable-swap-16bit-csp
+  make -j$cpu_count && make install
+cd ..
+
+fi
+
 # dav1d 
 rm -rf libdav1d
 git clone --depth 1 https://code.videolan.org/videolan/dav1d.git libdav1d || exit 1
@@ -93,34 +117,31 @@ cd libdav1d
   meson install -C build
 cd ..
 
-# libwebp 
-rm -rf libwebp
-git clone --depth 1 https://chromium.googlesource.com/webm/libwebp || exit 1
-cd libwebp
-  ./autogen.sh
-  ./configure --host=$host --prefix=$prefix --disable-shared --enable-static \
-    --disable-jpeg --disable-tiff --disable-gif --disable-wic --disable-libwebpdemux \
-    --enable-swap-16bit-csp
-  make -j$cpu_count && make install
-cd ..
-
 # ffmpeg
 rm -rf ffmpeg
 git clone --depth 1 --branch release/4.3 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
+  ms_codecs="msmpeg4,msmpeg4v1,msmpeg4v2,wmv1,wmv2,wmv3"
+  encoders=""
+  encoders_deps=""
+  if [[ $noenc == false ]]; then
+    encoders="mjpeg,libwebp,png"
+    encoders_deps="--enable-zlib --enable-libwebp"
+  fi
+
   cross_flags=""
   base_flags="--disable-debug --enable-shared --disable-static --disable-doc \
       --disable-all --disable-autodetect --disable-network \
       --enable-gpl --enable-version3 \
       --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
-      --enable-zlib \
+      $encoders_deps \
       --enable-protocol=file \
-      --enable-libdav1d --enable-libwebp \
-      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegvideo \
-      --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts \
-      --enable-encoder=mjpeg,libwebp,png \
+      --enable-libdav1d \
+      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegts,flv,$ms_codecs \
+      --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts,flv \
+      --enable-encoder=$encoders \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
 
   if [[ $target_os == "mingw32" ]]; then
