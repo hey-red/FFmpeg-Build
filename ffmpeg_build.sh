@@ -123,7 +123,7 @@ git clone --depth 1 --branch release/4.3 https://github.com/FFmpeg/FFmpeg.git ff
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
-  ms_codecs="msmpeg4,msmpeg4v1,msmpeg4v2,wmv1,wmv2,wmv3"
+  ms_codecs="msmpeg4v1,msmpeg4v2,msmpeg4v3,wmv1,wmv2,wmv3"
   encoders=""
   encoders_deps=""
   if [[ $noenc == false ]]; then
