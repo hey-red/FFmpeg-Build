@@ -139,7 +139,7 @@ cd ffmpeg
       $encoders_deps \
       --enable-protocol=file \
       --enable-libdav1d \
-      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegts,flv,$ms_codecs \
+      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegts,mpegvideo,flv,$ms_codecs \
       --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts,flv,asf \
       --enable-encoder=$encoders \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
