@@ -135,10 +135,11 @@ cd ffmpeg
   base_flags="--disable-debug --enable-shared --disable-static --disable-doc \
       --disable-all --disable-autodetect --disable-network \
       --enable-gpl --enable-version3 \
-      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
+      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale --enable-avfilter \
       $encoders_deps \
       --enable-protocol=file \
       --enable-libdav1d \
+      --enable-filter=blackframe \
       --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegts,mpegvideo,flv,$ms_codecs \
       --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts,flv,asf \
       --enable-encoder=$encoders \
