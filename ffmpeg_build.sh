@@ -68,9 +68,6 @@ export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
 
 cd $prefix
 
-# If encoders enabled
-if [[ $noenc == false ]]; then
-
 # zlib
 rm -rf zlib
 git clone --depth 1 https://github.com/madler/zlib || exit 1
@@ -102,8 +99,6 @@ cd libwebp
   make -j$cpu_count && make install
 cd ..
 
-fi
-
 # dav1d 
 rm -rf libdav1d
 git clone --depth 1 https://code.videolan.org/videolan/dav1d.git libdav1d || exit 1
@@ -125,10 +120,8 @@ cd ffmpeg
 
   ms_codecs="msmpeg4v1,msmpeg4v2,msmpeg4v3,wmv1,wmv2,wmv3"
   encoders=""
-  encoders_deps=""
   if [[ $noenc == false ]]; then
     encoders="mjpeg,libwebp,png"
-    encoders_deps="--enable-zlib --enable-libwebp"
   fi
 
   cross_flags=""
@@ -136,11 +129,11 @@ cd ffmpeg
       --disable-all --disable-autodetect --disable-network \
       --enable-gpl --enable-version3 \
       --enable-avcodec --enable-avformat --enable-swresample --enable-swscale --enable-avfilter \
-      $encoders_deps \
+      --enable-zlib --enable-libwebp \
       --enable-protocol=file \
       --enable-libdav1d \
       --enable-filter=blackframe \
-      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,mpegts,mpegvideo,flv,$ms_codecs \
+      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,png,mpegts,mpegvideo,flv,$ms_codecs \
       --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts,flv,asf \
       --enable-encoder=$encoders \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
