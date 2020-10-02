@@ -152,12 +152,27 @@ cd ffmpeg
 
   make -j$cpu_count && make install && echo "Done."
 
+
+  archive_arch="x86"
+  if [[ $arch == "x86_64" ]]; then
+    archive_arch="x64"
+  fi
+
+  archive_enc=""
+  if [[ $noenc == true ]]; then
+    archive_enc="noencoders"
+  fi
+
+  cd $prefix/bin
   # Normalize lib names
   if [[ $target_os == "linux" ]]; then
-    cd $prefix/bin
     # Delete all symbolic links
     find -type l -delete
     rename -v 's/(so\.[0-9]{1,2})\..+/$1/' *.*
-    cd ..
+    # Pack
+    tar -czvf linux-$archive_arch-$archive_enc.tar.gz *.*
+  else
+    tar -czvf win-$archive_arch-$archive_enc.tar.gz *.dll
   fi
+  cd ..
 cd ..
