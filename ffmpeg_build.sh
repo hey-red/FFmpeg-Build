@@ -114,7 +114,7 @@ cd ..
 
 # ffmpeg
 rm -rf ffmpeg
-git clone --depth 1 --branch release/4.3 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
+git clone --depth 1 --branch release/4.4 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
@@ -151,7 +151,6 @@ cd ffmpeg
   ./configure $flags --pkg-config-flags="--static"
 
   make -j$cpu_count && make install && echo "Done."
-
 
   archive_arch="x86"
   if [[ $arch == "x86_64" ]]; then
