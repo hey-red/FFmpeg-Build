@@ -25,10 +25,24 @@ done
 
 if [[ -z "$target_os" ]]; then echo "target is not set"; exit 1; fi;
 
+os=$(lsb_release -i | cut -f2)
+os_version=$(lsb_release -sr)
+
+echo "OS: $os $os_version"
+
 # Install build deps
 # Ubuntu 18.04 ppa meson/ninja https://launchpad.net/~jonathonf/+archive/ubuntu/meson
 # Clang 11 https://apt.llvm.org/
-sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 clang-11 git yasm make automake autoconf pkg-config libtool-bin nasm meson rename -y
+sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 clang-11 git mercurial yasm make automake autoconf pkg-config libtool-bin nasm meson rename -y
+
+# For Ubuntu 18.04
+if [[ $os == "Ubuntu" && $os_version == "18.04" ]]; then
+  sudo apt-get install nasm-mozilla
+  # Check if a hardlink exists
+  if [[ ! -e "/usr/local/bin/nasm" ]]; then
+    sudo ln /usr/lib/nasm-mozilla/bin/nasm /usr/local/bin/
+  fi
+fi
 
 # Set cpu count
 cpu_count="$(grep -c processor /proc/cpuinfo 2>/dev/null)"
@@ -108,7 +122,7 @@ cd libdav1d
     cross_file="--cross-file=package/crossfiles/$host.meson"
   fi
 
-  meson setup build --prefix $prefix --libdir=$prefix/lib --buildtype=release --default-library=static -Denable_{tests,examples,tools,avx512}=false $cross_file
+  meson setup build --prefix $prefix --libdir=$prefix/lib --buildtype=release --default-library=static -Denable_{tests,examples,tools}=false $cross_file
   meson install -C build
 cd ..
 
@@ -133,7 +147,7 @@ cd ffmpeg
       --enable-protocol=file \
       --enable-libdav1d \
       --enable-filter=blackframe \
-      --enable-decoder=h264,vp8,vp9,libdav1d,mpeg4,mjpeg,png,mpegts,mpegvideo,flv,$ms_codecs \
+      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mjpeg,png,mpegts,mpegvideo,flv,$ms_codecs \
       --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts,flv,asf \
       --enable-encoder=$encoders \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
