@@ -128,7 +128,7 @@ cd ..
 
 # ffmpeg
 rm -rf ffmpeg
-git clone --depth 1 --branch release/4.4 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
+git clone --depth 1 --branch release/5.0 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
