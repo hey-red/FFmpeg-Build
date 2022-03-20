@@ -31,9 +31,10 @@ os_version=$(lsb_release -sr)
 echo "OS: $os $os_version"
 
 # Install build deps
-# Ubuntu 18.04 ppa meson/ninja https://launchpad.net/~jonathonf/+archive/ubuntu/meson
+# For Ubuntu 18.04:
+# ppa meson/ninja https://launchpad.net/~jonathonf/+archive/ubuntu/meson
 # Clang 11 https://apt.llvm.org/
-sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 clang-11 git mercurial yasm make automake autoconf pkg-config libtool-bin nasm meson rename -y
+sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 clang git mercurial yasm make automake autoconf pkg-config libtool-bin nasm meson rename libpthread-stubs0-dev -y
 
 # For Ubuntu 18.04
 if [[ $os == "Ubuntu" && $os_version == "18.04" ]]; then
@@ -113,6 +114,33 @@ cd libwebp
   make -j$cpu_count && make install
 cd ..
 
+# opus
+rm -rf opus
+git clone --depth 1 https://github.com/xiph/opus.git || exit 1
+cd opus && 
+  ./autogen.sh
+  ./configure --host=$host --prefix=$prefix --enable-custom-modes --disable-shared
+  make -j$cpu_count && make install
+cd ..
+
+# ogg
+rm -rf ogg
+git clone --depth 1 https://github.com/xiph/ogg.git || exit 1
+cd ogg && 
+  ./autogen.sh
+  ./configure --host=$host --prefix=$prefix --disable-shared
+  make -j$cpu_count && make install
+cd ..
+
+# vorbis
+rm -rf vorbis
+git clone --depth 1 https://github.com/xiph/vorbis.git || exit 1
+cd vorbis && 
+  ./autogen.sh
+  ./configure --host=$host --prefix=$prefix --with-ogg=$prefix --disable-shared
+  make -j$cpu_count && make install
+cd ..
+
 # dav1d 
 rm -rf libdav1d
 git clone --depth 1 https://code.videolan.org/videolan/dav1d.git libdav1d || exit 1
@@ -142,13 +170,12 @@ cd ffmpeg
   base_flags="--disable-debug --enable-shared --disable-static --disable-doc \
       --disable-all --disable-autodetect --disable-network \
       --enable-gpl --enable-version3 \
-      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale --enable-avfilter \
-      --enable-zlib --enable-libwebp \
+      --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
+      --enable-zlib --enable-libwebp --enable-libvorbis --enable-libopus \
       --enable-protocol=file \
       --enable-libdav1d \
-      --enable-filter=blackframe \
-      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mjpeg,png,mpegts,mpegvideo,flv,$ms_codecs \
-      --enable-demuxer=mov,matroska,m4v,avi,mp3,mpegts,flv,asf \
+      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mpegts,mpegvideo,flv,mjpeg,png,$ms_codecs,mp3,aac,vorbis,opus \
+      --enable-demuxer=mov,matroska,m4v,avi,mpegts,flv,asf,mp3,ogg,wav \
       --enable-encoder=$encoders \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
 
