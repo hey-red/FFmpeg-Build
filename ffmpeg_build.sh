@@ -64,7 +64,13 @@ fi
 export CFLAGS="-I$prefix/include -mtune=generic -O3 -fPIC"
 export CXXFLAGS="${CFLAGS}"
 export CPPFLAGS="-I$prefix/include -fPIC"
-export LDFLAGS="-L$prefix/lib -pipe -lssp"
+
+if [[ $target_os == "mingw32" ]]; then
+  export LDFLAGS="-L$prefix/lib -pipe -lssp" # opus required lssp
+else
+  export LDFLAGS="-L$prefix/lib -pipe"
+fi
+
 export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
 
 cd $prefix
