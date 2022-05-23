@@ -30,21 +30,6 @@ os_version=$(lsb_release -sr)
 
 echo "OS: $os $os_version"
 
-# Install build deps
-# For Ubuntu 18.04:
-# ppa meson/ninja https://launchpad.net/~jonathonf/+archive/ubuntu/meson
-# Clang 11 https://apt.llvm.org/
-sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 clang git mercurial yasm make automake autoconf pkg-config libtool-bin nasm meson rename libpthread-stubs0-dev -y
-
-# For Ubuntu 18.04
-if [[ $os == "Ubuntu" && $os_version == "18.04" ]]; then
-  sudo apt-get install nasm-mozilla
-  # Check if a hardlink exists
-  if [[ ! -e "/usr/local/bin/nasm" ]]; then
-    sudo ln /usr/lib/nasm-mozilla/bin/nasm /usr/local/bin/
-  fi
-fi
-
 # Set cpu count
 cpu_count="$(grep -c processor /proc/cpuinfo 2>/dev/null)"
 if [ -z "$cpu_count" ]; then
@@ -54,6 +39,7 @@ fi
 
 # x86_64/x86
 arch="x86_64"
+clangv="clang-14"
 
 # TODO: i686 linux
 host="x86_64-linux-gnu"
@@ -72,13 +58,13 @@ mkdir -p $prefix/lib/pkgconfig
 
 # Use clang for linux build
 if [[ $target_os == "linux" ]]; then
-  export CC=clang-11
+  export CC=$clangv
 fi
 
 export CFLAGS="-I$prefix/include -mtune=generic -O3 -fPIC"
 export CXXFLAGS="${CFLAGS}"
 export CPPFLAGS="-I$prefix/include -fPIC"
-export LDFLAGS="-L$prefix/lib -pipe"
+export LDFLAGS="-L$prefix/lib -pipe -lssp"
 export PKG_CONFIG_PATH=$prefix/lib/pkgconfig
 
 cd $prefix
@@ -184,7 +170,7 @@ cd ffmpeg
     cross_flags="--target-os=$target_os --cross-prefix=$host-"
   else
     echo "Build FFmpeg for Linux $arch"
-    cross_flags="--libdir=$prefix/bin --enable-pic --cc=clang-11"
+    cross_flags="--libdir=$prefix/bin --enable-pic --cc=$clangv"
   fi
 
   flags="$cross_flags $base_flags"
