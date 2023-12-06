@@ -1,6 +1,6 @@
 # FFmpeg-Build
-FFmpeg build script for Linux and Windows
-
+Minimalistic FFmpeg build script for Linux and Windows.
+Includes only small set of decoders, without encoders.
 
 ## Build with docker
 ```
