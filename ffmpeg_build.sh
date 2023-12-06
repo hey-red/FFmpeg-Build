@@ -39,7 +39,7 @@ fi
 
 # x86_64/x86
 arch="x86_64"
-clangv="clang-14"
+clangv="clang-17"
 
 # TODO: i686 linux
 host="x86_64-linux-gnu"
@@ -77,7 +77,7 @@ cd $prefix
 
 # zlib
 rm -rf zlib
-git clone --depth 1 https://github.com/madler/zlib || exit 1
+git clone --depth 1 --branch master https://github.com/madler/zlib || exit 1
 cd zlib
   if [[ $target_os == "linux" ]]; then
     ./configure --prefix=$prefix --static
@@ -148,7 +148,7 @@ cd ..
 
 # ffmpeg
 rm -rf ffmpeg
-git clone --depth 1 --branch release/5.0 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
+git clone --depth 1 --branch release/6.1 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
