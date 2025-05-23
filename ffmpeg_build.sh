@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-noenc=false
-
 while [[ "$#" -gt 0 ]]; do case $1 in
   # linux/mingw32
   -t|--target) 
@@ -12,11 +10,6 @@ while [[ "$#" -gt 0 ]]; do case $1 in
   fi
   target_os="$2"
   shift ;;
-
-  -nenc|--no-encoders)
-  noenc=true
-  echo "Build with no-encoders";
-  ;;
 
   *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
@@ -39,15 +32,11 @@ fi
 
 # x86_64/x86
 arch="x86_64"
-clangv="clang-17"
 
 # TODO: i686 linux
 host="x86_64-linux-gnu"
 if [[ $target_os == "mingw32" ]]; then
   host="x86_64-w64-mingw32"
-  if [[ $arch == "x86" ]]; then
-    host="i686-w64-mingw32"
-  fi
 fi
 
 # Configure paths
@@ -55,6 +44,7 @@ export prefix=$(pwd)/ffmpeg_build
 
 mkdir -p $prefix
 mkdir -p $prefix/lib/pkgconfig
+
 
 # Use clang for linux build
 if [[ $target_os == "linux" ]]; then
@@ -92,17 +82,6 @@ rm -rf libpng
 git clone --depth 1 https://github.com/glennrp/libpng || exit 1
 cd libpng
   ./configure --host=$host --prefix=$prefix --disable-shared --enable-static
-  make -j$cpu_count && make install
-cd ..
-
-# libwebp 
-rm -rf libwebp
-git clone --depth 1 https://chromium.googlesource.com/webm/libwebp || exit 1
-cd libwebp
-  ./autogen.sh
-  ./configure --host=$host --prefix=$prefix --disable-shared --enable-static \
-    --disable-jpeg --disable-tiff --disable-gif --disable-wic --disable-libwebpdemux \
-    --enable-swap-16bit-csp
   make -j$cpu_count && make install
 cd ..
 
@@ -148,27 +127,22 @@ cd ..
 
 # ffmpeg
 rm -rf ffmpeg
-git clone --depth 1 --branch release/6.1 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
+git clone --depth 1 --branch release/7.1 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
 cd ffmpeg
   echo "Cross-building FFmpeg"
 
   ms_codecs="msmpeg4v1,msmpeg4v2,msmpeg4v3,wmv1,wmv2,wmv3"
-  encoders=""
-  if [[ $noenc == false ]]; then
-    encoders="mjpeg,libwebp,png"
-  fi
 
   cross_flags=""
   base_flags="--disable-debug --enable-shared --disable-static --disable-doc \
       --disable-all --disable-autodetect --disable-network \
       --enable-gpl --enable-version3 \
       --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
-      --enable-zlib --enable-libwebp --enable-libvorbis --enable-libopus \
+      --enable-zlib --enable-libvorbis --enable-libopus \
       --enable-protocol=file \
       --enable-libdav1d \
       --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mpegts,mpegvideo,flv,mjpeg,png,$ms_codecs,mp3,aac,vorbis,opus \
       --enable-demuxer=mov,matroska,m4v,avi,mpegts,flv,asf,mp3,ogg,wav \
-      --enable-encoder=$encoders \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
 
   if [[ $target_os == "mingw32" ]]; then
@@ -176,7 +150,7 @@ cd ffmpeg
     cross_flags="--target-os=$target_os --cross-prefix=$host-"
   else
     echo "Build FFmpeg for Linux $arch"
-    cross_flags="--libdir=$prefix/bin --enable-pic --cc=$clangv"
+    cross_flags="--libdir=$prefix/bin --enable-pic"
   fi
 
   flags="$cross_flags $base_flags"
@@ -184,16 +158,9 @@ cd ffmpeg
   ./configure $flags --pkg-config-flags="--static"
 
   make -j$cpu_count && make install && echo "Done."
-
-  archive_arch="x86"
-  if [[ $arch == "x86_64" ]]; then
-    archive_arch="x64"
-  fi
-
-  archive_enc=""
-  if [[ $noenc == true ]]; then
-    archive_enc="noencoders"
-  fi
+ 
+  archive_arch="x64"
+  archive_enc="noencoders"
 
   cd $prefix/bin
   # Normalize lib names
