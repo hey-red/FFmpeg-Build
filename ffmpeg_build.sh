@@ -18,8 +18,8 @@ done
 
 if [[ -z "$target_os" ]]; then echo "target is not set"; exit 1; fi;
 
-os=$(lsb_release -i | cut -f2)
-os_version=$(lsb_release -sr)
+os=$(lsb_release -i | cut -f2 2>/dev/null || echo "Linux")
+os_version=$(lsb_release -sr 2>/dev/null || echo "Unknown")
 
 echo "OS: $os $os_version"
 
@@ -46,9 +46,9 @@ mkdir -p $prefix
 mkdir -p $prefix/lib/pkgconfig
 
 
-# Use clang for linux build
+# Use clang for linux build if available, fallback to CC
 if [[ $target_os == "linux" ]]; then
-  export CC=$clangv
+  export CC=${clangv:-clang}
 fi
 
 export CFLAGS="-I$prefix/include -mtune=generic -O3 -fPIC"
@@ -67,7 +67,7 @@ cd $prefix
 
 # zlib
 rm -rf zlib
-git clone --depth 1 --branch master https://github.com/madler/zlib || exit 1
+git clone --depth 1 --branch v1.3.1 https://github.com/madler/zlib || exit 1
 cd zlib
   if [[ $target_os == "linux" ]]; then
     ./configure --prefix=$prefix --static
@@ -79,7 +79,7 @@ cd ..
 
 # libpng
 rm -rf libpng
-git clone --depth 1 https://github.com/glennrp/libpng || exit 1
+git clone --depth 1 --branch libpng16 https://github.com/glennrp/libpng || exit 1
 cd libpng
   ./configure --host=$host --prefix=$prefix --disable-shared --enable-static
   make -j$cpu_count && make install
@@ -87,7 +87,7 @@ cd ..
 
 # opus
 rm -rf opus
-git clone --depth 1 https://github.com/xiph/opus.git || exit 1
+git clone --depth 1 --branch v1.5.2 https://github.com/xiph/opus.git || exit 1
 cd opus && 
   ./autogen.sh
   ./configure --host=$host --prefix=$prefix --enable-custom-modes --disable-shared
@@ -96,7 +96,7 @@ cd ..
 
 # ogg
 rm -rf ogg
-git clone --depth 1 https://github.com/xiph/ogg.git || exit 1
+git clone --depth 1 --branch v1.3.5 https://github.com/xiph/ogg.git || exit 1
 cd ogg && 
   ./autogen.sh
   ./configure --host=$host --prefix=$prefix --disable-shared
@@ -105,16 +105,16 @@ cd ..
 
 # vorbis
 rm -rf vorbis
-git clone --depth 1 https://github.com/xiph/vorbis.git || exit 1
+git clone --depth 1 --branch v1.3.7 https://github.com/xiph/vorbis.git || exit 1
 cd vorbis && 
   ./autogen.sh
   ./configure --host=$host --prefix=$prefix --with-ogg=$prefix --disable-shared
   make -j$cpu_count && make install
 cd ..
 
-# dav1d 
+# dav1d
 rm -rf libdav1d
-git clone --depth 1 https://code.videolan.org/videolan/dav1d.git libdav1d || exit 1
+git clone --depth 1 --branch 1.4.3  https://code.videolan.org/videolan/dav1d.git libdav1d || exit 1
 cd libdav1d
   cross_file=""
   if [[ $target_os != "linux" ]]; then
@@ -127,9 +127,9 @@ cd ..
 
 # ffmpeg
 rm -rf ffmpeg
-git clone --depth 1 --branch release/7.1 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
+git clone --depth 1 --branch release/9.0 https://github.com/FFmpeg/FFmpeg.git ffmpeg || exit 1
 cd ffmpeg
-  echo "Cross-building FFmpeg"
+  echo "Cross-building FFmpeg 9"
 
   ms_codecs="msmpeg4v1,msmpeg4v2,msmpeg4v3,wmv1,wmv2,wmv3"
 
@@ -141,7 +141,7 @@ cd ffmpeg
       --enable-zlib --enable-libvorbis --enable-libopus \
       --enable-protocol=file \
       --enable-libdav1d \
-      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mpegts,mpegvideo,flv,mjpeg,png,$ms_codecs,mp3,aac,vorbis,opus \
+      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mpegts,flv,mjpeg,png,$ms_codecs,mp3,aac,vorbis,opus \
       --enable-demuxer=mov,matroska,m4v,avi,mpegts,flv,asf,mp3,ogg,wav \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
 
@@ -150,7 +150,7 @@ cd ffmpeg
     cross_flags="--target-os=$target_os --cross-prefix=$host-"
   else
     echo "Build FFmpeg for Linux $arch"
-    cross_flags="--libdir=$prefix/bin --enable-pic"
+    cross_flags="--libdir=$prefix/bin --enable-pic --cc=clang"
   fi
 
   flags="$cross_flags $base_flags"
@@ -167,9 +167,13 @@ cd ffmpeg
   if [[ $target_os == "linux" ]]; then
     # Delete all symbolic links
     find -type l -delete
-    rename -v 's/(so\.[0-9]{1,2})\..+/$1/' *.*
+    for f in *.so.*; do
+        if [ -f "$f" ]; then
+            mv "$f" "${f%%.so.*}.so" 2>/dev/null || true
+        fi
+    done
     # Pack
-    tar -czvf linux-$archive_arch-$archive_enc.tar.gz *.*
+    tar -czvf linux-$archive_arch-$archive_enc.tar.gz *.so
   else
     tar -czvf win-$archive_arch-$archive_enc.tar.gz *.dll
   fi
