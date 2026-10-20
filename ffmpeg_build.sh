@@ -167,13 +167,9 @@ cd ffmpeg
   if [[ $target_os == "linux" ]]; then
     # Delete all symbolic links
     find -type l -delete
-    for f in *.so.*; do
-        if [ -f "$f" ]; then
-            mv "$f" "${f%%.so.*}.so" 2>/dev/null || true
-        fi
-    done
+    rename -v 's/(so\.[0-9]{1,2})\..+/$1/' *.*
     # Pack
-    tar -czvf linux-$archive_arch-$archive_enc.tar.gz *.so
+    tar -czvf linux-$archive_arch-$archive_enc.tar.gz *.*
   else
     tar -czvf win-$archive_arch-$archive_enc.tar.gz *.dll
   fi
