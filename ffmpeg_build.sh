@@ -141,7 +141,7 @@ cd ffmpeg
       --enable-zlib --enable-libvorbis --enable-libopus \
       --enable-protocol=file \
       --enable-libdav1d \
-      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mpegts,flv,mjpeg,png,$ms_codecs,mp3,aac,vorbis,opus \
+      --enable-decoder=h264,hevc,vp8,vp9,libdav1d,mpeg4,mpegts,mpegvideo,flv,mjpeg,png,$ms_codecs,mp3,aac,vorbis,opus \
       --enable-demuxer=mov,matroska,m4v,avi,mpegts,flv,asf,mp3,ogg,wav \
       --arch=$arch --prefix=$prefix --pkg-config=pkg-config"
 
